@@ -1,4 +1,8 @@
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
 fake = pd.read_csv("Fake.csv")
 true = pd.read_csv("True.csv")
@@ -56,3 +60,23 @@ def preprocess_text(text):
 data['text']=data['text'].apply(preprocess_text)
 print(data.head())
 data.to_csv("cleaned_data.csv", index=False)
+
+vectorizer = TfidfVectorizer()
+X = vectorizer.fit_transform(data['text'])
+y = data['label']
+print(X.shape)
+print(y.shape)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+print(X_train.shape)
+print(X_test.shape)
+
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+print(confusion_matrix(y_test, y_pred))
