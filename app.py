@@ -4,6 +4,7 @@ import re
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
+nltk.download('stopwords', quiet=True)
 
 # load saved model and vectorizer
 model = pickle.load(open("model.pkl", "rb"))
@@ -32,32 +33,32 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    text = request.form['news']
+    try:
+        text = request.form.get('news', '')
 
-    # Input validation
-    if len(text.split()) < 20:
-        return render_template('index.html', prediction_text="Please enter a full news article (at least 20 words)")
+        # handle empty input
+        if not text:
+            return render_template('index.html', prediction_text="Please enter some text")
 
-    # preprocessing
-    processed = preprocess_text(text)
+        # minimum length check
+        if len(text.split()) < 20:
+            return render_template('index.html', prediction_text="Please enter a full news article (at least 20 words)")
 
-    # vectorize
-    vectorized = vectorizer.transform([processed])
+        processed = preprocess_text(text)
 
-    # prediction
-    prediction = model.predict(vectorized)[0]
+        vectorized = vectorizer.transform([processed])
 
-    # confidence score
-    proba = model.predict_proba(vectorized)[0]
-    confidence = max(proba)
+        prediction = model.predict(vectorized)[0]
+        proba = model.predict_proba(vectorized)[0]
+        confidence = max(proba)
 
-    # result
-    label = "Real News" if prediction == 1 else "Fake News"
+        label = "Real News" if prediction == 1 else "Fake News"
+        result = f"{label} ({confidence*100:.2f}% confidence)"
 
-    # combine result + confidence
-    result = f"{label} ({confidence*100:.2f}% confidence)"
+        return render_template('index.html', prediction_text=result)
 
-    return render_template('index.html', prediction_text=result)
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
