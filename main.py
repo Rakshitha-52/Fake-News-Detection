@@ -87,3 +87,13 @@ print("\nNaive Bayes Results")
 print("Accuracy:", accuracy_score(y_test, nb_pred))
 
 print("\nModel Comparison Completed")
+
+import pickle
+
+# Save Logistic Regression model
+with open("model.pkl", "wb") as f:
+    pickle.dump(lr_model, f)
+
+# Save TF-IDF vectorizer
+with open("vectorizer.pkl", "wb") as f:
+    pickle.dump(vectorizer, f)
