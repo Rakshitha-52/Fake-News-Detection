@@ -1,82 +1,89 @@
 import pandas as pd
+import nltk
+import re
+
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.naive_bayes import MultinomialNB
 
-fake = pd.read_csv("Fake.csv")
-true = pd.read_csv("True.csv")
-
-print(fake.head())
-print(true.head())
-
-fake['label'] = 0   # fake
-true['label'] = 1   # real
-
-data = pd.concat([fake, true])
-
-print(data.head())
-print(data.shape)
-
-data = data[['text', 'label']]
-print(data.head())
-
-print(data['label'].value_counts())
-
-data = data.sample(frac=1).reset_index(drop=True)
-
-print(data.shape)
-
-import nltk
-import re
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
 nltk.download('stopwords')
 
+
+# 1. Load Dataset
+
+fake = pd.read_csv("Fake.csv")
+true = pd.read_csv("True.csv")
+
+# Add labels
+fake['label'] = 0
+true['label'] = 1
+
+data = pd.concat([fake, true])
+
+data = data[['text', 'label']]
+
+data = data.sample(frac=1).reset_index(drop=True)
+
+# 2. Text Preprocessing
+
 def preprocess_text(text):
-    # 1. Lowercase
     text = text.lower()
-    
-    # 2. Remove punctuation & numbers
     text = re.sub(r'[^a-zA-Z]', ' ', text)
-    
-    # 3. Remove extra spaces
     text = re.sub(r'\s+', ' ', text)
-    
-    # 4. Tokenize
+
     words = text.split()
-    
-    # 5. Remove stopwords
+
     stop_words = set(stopwords.words('english'))
     words = [word for word in words if word not in stop_words]
-    
-    # 6. Stemming
+
     stemmer = PorterStemmer()
     words = [stemmer.stem(word) for word in words]
-    
+
     return " ".join(words)
 
-data['text']=data['text'].apply(preprocess_text)
-print(data.head())
-data.to_csv("cleaned_data.csv", index=False)
+# Apply preprocessing
+data['text'] = data['text'].apply(preprocess_text)
+
+
+# 3. Feature Extraction (TF-IDF)
 
 vectorizer = TfidfVectorizer()
 X = vectorizer.fit_transform(data['text'])
 y = data['label']
-print(X.shape)
-print(y.shape)
+
+
+# 4. Train-Test Split
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-print(X_train.shape)
-print(X_test.shape)
+# 5. Logistic Regression Model
 
-model = LogisticRegression(max_iter=1000)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-print("Accuracy:", accuracy)
-print(confusion_matrix(y_test, y_pred))
+lr_model = LogisticRegression(max_iter=1000)
+lr_model.fit(X_train, y_train)
+
+lr_pred = lr_model.predict(X_test)
+
+print("Logistic Regression Results")
+print("Accuracy:", accuracy_score(y_test, lr_pred))
+print("Confusion Matrix:\n", confusion_matrix(y_test, lr_pred))
+print("Classification Report:\n", classification_report(y_test, lr_pred))
+
+
+# 6. Naive Bayes Model
+
+nb_model = MultinomialNB()
+nb_model.fit(X_train, y_train)
+
+nb_pred = nb_model.predict(X_test)
+
+print("\nNaive Bayes Results")
+print("Accuracy:", accuracy_score(y_test, nb_pred))
+
+print("\nModel Comparison Completed")
